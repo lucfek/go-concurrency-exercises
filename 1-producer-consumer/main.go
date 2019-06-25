@@ -13,12 +13,7 @@ import (
 	"time"
 )
 
-var (
-	tweetChan chan *Tweet
-	done      chan struct{}
-)
-
-func producer(stream Stream) {
+func producer(stream Stream, tweetChan chan<- *Tweet) {
 	for {
 		tweet, err := stream.Next()
 		if err == ErrEOF {
@@ -29,7 +24,7 @@ func producer(stream Stream) {
 	}
 }
 
-func consumer() {
+func consumer(tweetChan <-chan *Tweet, done chan<- struct{}) {
 	for {
 		t, more := <-tweetChan
 		if more {
@@ -46,16 +41,16 @@ func consumer() {
 }
 
 func main() {
-	tweetChan = make(chan *Tweet)
-	done = make(chan struct{})
+	tweetChan := make(chan *Tweet)
+	done := make(chan struct{})
 	start := time.Now()
 	stream := GetMockStream()
 
 	// Producer
-	go producer(stream)
+	go producer(stream, tweetChan)
 
 	// Consumer
-	go consumer()
+	go consumer(tweetChan, done)
 	<-done
 	fmt.Printf("Process took %s\n", time.Since(start))
 }
