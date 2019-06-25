@@ -17,11 +17,11 @@ import (
 
 // Crawl uses `fetcher` from the `mockfetcher.go` file to imitate a
 // real crawler. It crawls until the maximum depth has reached.
-type Trottler struct {
+type Throttler struct {
 	Ticker *time.Ticker
 }
 
-func (t Trottler) Wait() {
+func (t Throttler) Wait() {
 	<-t.Ticker.C
 }
 
@@ -55,7 +55,7 @@ func Crawl(url string, depth int, wg *sync.WaitGroup, w Waiter) {
 
 func main() {
 	var wg sync.WaitGroup
-	Waiter := Trottler{time.NewTicker(time.Second)}
+	Waiter := Throttler{time.NewTicker(time.Second)}
 
 	wg.Add(1)
 	Crawl("http://golang.org/", 4, &wg, Waiter)
