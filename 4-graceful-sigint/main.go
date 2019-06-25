@@ -13,10 +13,33 @@
 
 package main
 
+import (
+	"log"
+	"os"
+	"os/signal"
+)
+
 func main() {
 	// Create a process
 	proc := MockProcess{}
 
+	quit := make(chan os.Signal, 1)
+	done := make(chan struct{}, 1)
+
+	signal.Notify(quit, os.Interrupt)
+	go func() {
+		<-quit
+		signal.Notify(quit, os.Interrupt)
+		go func() {
+			<-quit
+			os.Exit(0)
+		}()
+		proc.Stop()
+		done <- struct{}{}
+	}()
 	// Run the process (blocking)
 	proc.Run()
+
+	<-done
+	log.Println("Process stoped")
 }
