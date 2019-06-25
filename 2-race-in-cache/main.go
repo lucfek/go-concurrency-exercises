@@ -19,11 +19,21 @@ type KeyStoreCacheLoader interface {
 	Load(string) string
 }
 
+type mutex chan struct{}
+
+func (m mutex) Lock() {
+	m <- struct{}{}
+}
+func (m mutex) Unlock() {
+	<-m
+}
+
 // KeyStoreCache is a LRU cache for string key-value pairs
 type KeyStoreCache struct {
 	cache map[string]string
 	pages list.List
 	load  func(string) string
+	mutex mutex
 }
 
 // New creates a new KeyStoreCache
@@ -31,11 +41,14 @@ func New(load KeyStoreCacheLoader) *KeyStoreCache {
 	return &KeyStoreCache{
 		load:  load.Load,
 		cache: make(map[string]string),
+		mutex: make(chan struct{}, 1),
 	}
 }
 
 // Get gets the key from cache, loads it from the source if needed
 func (k *KeyStoreCache) Get(key string) string {
+	k.mutex.Lock()
+	defer k.mutex.Unlock()
 	val, ok := k.cache[key]
 
 	// Miss - load from database and save it in cache
