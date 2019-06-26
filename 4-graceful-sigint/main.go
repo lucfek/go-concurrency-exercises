@@ -29,13 +29,12 @@ func main() {
 	signal.Notify(quit, os.Interrupt)
 	go func() {
 		<-quit
-		signal.Notify(quit, os.Interrupt)
 		go func() {
-			<-quit
-			os.Exit(0)
+			proc.Stop()
+			done <- struct{}{}
 		}()
-		proc.Stop()
-		done <- struct{}{}
+		<-quit
+		os.Exit(0)
 	}()
 	// Run the process (blocking)
 	proc.Run()
